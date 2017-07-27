@@ -4,8 +4,7 @@
   "description": "Tanks tutorial for web sockets",
   "main": "app.js",
   "scripts": {
-    "start" : "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "babel src/index.js -o src/server.js && babel-node src/server.js"
   },
   "repository": {
     "type": "git",
@@ -24,6 +23,12 @@
   "homepage": "https://github.com/rubentd/tanks#readme",
   "dependencies": {
     "express": "^4.13.3",
+    "random-js": "^1.0.8",
     "socket.io": "^1.3.7"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-plugin-root-import": "^5.1.0",
+    "babel-preset-es2015": "^6.24.1"
   }
 }

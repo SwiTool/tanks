@@ -1,7 +1,7 @@
 var WIDTH = 1100;
 var HEIGHT = 580;
 // This IP is hardcoded to my server, replace with your own
-var socket = io.connect('https://rubentd-tanks.herokuapp.com');
+var socket = io.connect('http://localhost:8082');
 var game = new Game('#arena', WIDTH, HEIGHT, socket);
 var selectedTank = 1;
 var tankName = '';

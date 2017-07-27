@@ -15,12 +15,10 @@ body{
 	padding: 10px;
 }
 
-.arena{
-	margin: 10px auto;
-	background-color: white;
-	position: relative;
-	pointer-events: none;
-}
+/*body canvas {
+	width: 100vw;
+	height: 100vh;
+}*/
 
 .tank{
 	position: absolute;

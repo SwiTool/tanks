@@ -82,7 +82,8 @@ Game.prototype = {
 	receiveData: function(serverData){
 		var game = this;
 
-		serverData.tanks.forEach( function(serverTank){
+		for (var i in serverData.tanks) {
+			var serverTank = serverData.tanks[i];
 
 			//Update local tank stats
 			if(game.localTank !== undefined && serverTank.id == game.localTank.id){
@@ -114,7 +115,8 @@ Game.prototype = {
 				//I need to create it
 				game.addTank(serverTank.id, serverTank.type, false, serverTank.x, serverTank.y, serverTank.hp);
 			}
-		});
+
+		}
 
 		//Render balls
 		game.$arena.find('.cannon-ball').remove();
@@ -166,7 +168,7 @@ Ball.prototype = {
 function Tank(id, type, $arena, game, isLocal, x, y, hp){
 	this.id = id;
 	this.type = type;
-	this.speed = 5;
+	this.speed = 100;
 	this.$arena = $arena;
 	this.w = 60;
 	this.h = 80;
@@ -258,7 +260,7 @@ Tank.prototype = {
 		$(document).keypress( function(e){
 			var k = e.keyCode || e.which;
 			switch(k){
-				case 119: //W
+				case 122: //Z
 					t.dir.up = true;
 					break;
 				case 100: //D
@@ -267,7 +269,7 @@ Tank.prototype = {
 				case 115: //S
 					t.dir.down = true;
 					break;
-				case 97: //A
+				case 113: //Q
 					t.dir.left = true;
 					break;
 			}
@@ -275,7 +277,7 @@ Tank.prototype = {
 		}).keyup( function(e){
 			var k = e.keyCode || e.which;
 			switch(k){
-				case 87: //W
+				case 90: //Z
 					t.dir.up = false;
 					break;
 				case 68: //D
@@ -284,7 +286,7 @@ Tank.prototype = {
 				case 83: //S
 					t.dir.down = false;
 					break;
-				case 65: //A
+				case 81: //Q
 					t.dir.left = false;
 					break;
 			}
