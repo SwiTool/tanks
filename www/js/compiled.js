@@ -57391,9 +57391,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Game = function () {
-	function Game(myTank) {
+	function Game(myData) {
 		_classCallCheck(this, Game);
 
+		console.log("My Client ID: " + myData.clientId);
+		window.removeTank = this.removeTank.bind(this);
+		this.socket = window.tankGame.socket;
+
+		var myTank = myData.tankData;
 		var availableTanks = window.tankGame.availableTanks;
 		var opt = availableTanks[myTank.type - 1];
 		opt.id = myTank.id;
@@ -57402,8 +57407,10 @@ var Game = function () {
 		opt.x = myTank.x;
 		opt.y = myTank.y;
 
+		this.tanks = {};
 		this.myTank = new _Tank2.default(app, opt, true);
-		this.socket = window.tankGame.socket;
+
+		this.tanks[myData.clientId] = this.myTank;
 		this.initTankEvents();
 	}
 
@@ -57418,6 +57425,52 @@ var Game = function () {
 			this.myTank.on('shoot', function (data) {
 				_this.socket.emit('shoot', data);
 			});
+
+			this.socket.on('addTank', this.addTank.bind(this));
+			this.socket.on('removeTank', this.removeTank.bind(this));
+			this.socket.on('gameListTanks', this.onListTanks.bind(this));
+			this.socket.on('shoot', this.onShoot.bind(this));
+			this.socket.on('velocityChange', this.onVelocityChange.bind(this));
+		}
+	}, {
+		key: 'addTank',
+		value: function addTank(data) {
+			var availableTanks = window.tankGame.availableTanks;
+			var mergedTank = Object.assign(availableTanks[data.tankData.type - 1], data.tankData);
+			this.tanks[data.clientId] = new _Tank2.default(app, mergedTank, false);
+		}
+	}, {
+		key: 'removeTank',
+		value: function removeTank(data) {
+			if (this.tanks[data]) {
+				console.log("Tank " + data + " destroyed");
+				this.tanks[data].destroy();
+				delete this.tanks[data];
+			}
+		}
+	}, {
+		key: 'onListTanks',
+		value: function onListTanks(tanks) {
+			for (var i in tanks) {
+				var tank = tanks[i];
+				this.addTank({
+					clientId: i,
+					tankData: tank
+				});
+			}
+		}
+	}, {
+		key: 'onShoot',
+		value: function onShoot(data) {
+			var tank = this.tanks[data.clientId];
+			tank.shoot(data.shootData.x, data.shootData.y, data.shootData.angle);
+		}
+	}, {
+		key: 'onVelocityChange',
+		value: function onVelocityChange(data) {
+			//console.log(data);
+			var tank = this.tanks[data.clientId];
+			tank.setVelocity(data.velocity);
 		}
 	}]);
 
@@ -57462,24 +57515,13 @@ var Home = function () {
 			this.vm = new _vue2.default({
 				el: "#page",
 				data: {
-					app: this.app,
 					socket: this.socket,
-					self: this,
 					loading: false,
 					selectedTankId: 1,
 					availableTanks: [],
 					tankName: "Tanker" + random.integer(1, 9999),
 					connected: false,
 					inGame: false
-				},
-				watch: {
-					'connected': function connected(e) {
-						if (e) {
-							this.setConnectedBackground();
-						} else {
-							this.setDisconnectedBackground();
-						}
-					}
 				},
 				mounted: function mounted() {
 					this.fetchAvailableTanks();
@@ -57498,12 +57540,6 @@ var Home = function () {
 					selectTank: function selectTank(id) {
 						this.selectedTankId = id;
 					},
-					setConnectedBackground: function setConnectedBackground() {
-						this.app.renderer.backgroundColor = 0xadd8e6;
-					},
-					setDisconnectedBackground: function setDisconnectedBackground() {
-						this.app.renderer.backgroundColor = 0xde7575;
-					},
 					fetchAvailableTanks: function fetchAvailableTanks() {
 						this.socket.emit('availableTanksRequest');
 					}
@@ -57517,9 +57553,11 @@ var Home = function () {
 
 			this.socket.on('connect', function () {
 				_this.vm.connected = true;
+				_this.app.renderer.backgroundColor = 0xadd8e6;
 			});
 			this.socket.on('disconnect', function () {
 				_this.vm.connected = false;
+				_this.app.renderer.backgroundColor = 0xde7575;
 			});
 			this.socket.on('availableTanksResponse', function (availableTanks) {
 				_this.vm.availableTanks = availableTanks;
@@ -57628,6 +57666,7 @@ var Tank = function (_EventEmitter) {
 		_this.bullet = options.bulletInfo;
 		_this.vx = 0;
 		_this.vy = 0;
+		_this.alpha = 0;
 
 		_this.controllable = controllable;
 
@@ -57639,6 +57678,8 @@ var Tank = function (_EventEmitter) {
 
 		_this.renderer = new _TankRenderer2.default(_this.app, options.base, options.cannon, _this.toJson());
 
+		_this.app.ticker.add(_this.tick, _this);
+
 		if (_this.controllable) {
 			_this.initControls();
 		}
@@ -57646,6 +57687,90 @@ var Tank = function (_EventEmitter) {
 	}
 
 	_createClass(Tank, [{
+		key: 'destroy',
+		value: function destroy() {
+			this.app.ticker.remove(this.tick, this);
+			this.renderer.destroy();
+			delete this.renderer;
+		}
+	}, {
+		key: 'tick',
+		value: function tick(delta) {
+			var limits = window.tankGame.limits;
+			this.renderer.tank.position.x += this.speed * this.vx * delta;
+			this.renderer.tank.position.y += this.speed * this.vy * delta;
+			if (this.renderer.tank.position.x < 30) {
+				this.renderer.tank.position.x = 30;
+			} else if (this.renderer.tank.position.x > limits.w - 30) {
+				this.renderer.tank.position.x = limits.w - 30;
+			}
+			if (this.renderer.tank.position.y < 30) {
+				this.renderer.tank.position.y = 30;
+			} else if (this.renderer.tank.position.y > limits.h - 30) {
+				this.renderer.tank.position.y = limits.h - 30;
+			}
+			if (this.vx || this.vy) {
+				this.renderer.base.rotation = Math.atan2(this.vy, this.vx) + Math.PI / 2;
+				this.renderer.cannon.rotation = this.alpha - this.renderer.base.rotation;
+			}
+		}
+	}, {
+		key: 'initControls',
+		value: function initControls() {
+			var _this2 = this;
+
+			this.renderer.cannon.on('mousemove', this.onMouseMove.bind(this));
+			this.app.renderer.plugins.interaction.on('mousedown', this._onMouseDown.bind(this));
+			this.app.renderer.plugins.interaction.on('mouseup', this._onMouseUp.bind(this));
+			this.app.renderer.plugins.interaction.on('mouseupoutside', this._onMouseUp.bind(this));
+			this.initKeyboard();
+			this.app.ticker.add(function (delta) {
+				_this2.onMouseMove();
+			});
+		}
+	}, {
+		key: 'initKeyboard',
+		value: function initKeyboard() {
+			var _this3 = this;
+
+			var left = (0, _Keyboard2.default)([37, 81]),
+			    up = (0, _Keyboard2.default)([38, 90]),
+			    right = (0, _Keyboard2.default)([39, 68]),
+			    down = (0, _Keyboard2.default)([40, 83]);
+
+			var velocityChange = function velocityChange() {
+				_this3.emit('velocityChange', {
+					vx: _this3.vx,
+					vy: _this3.vy
+				});
+			};
+			var goRight = function goRight() {
+				_this3.vx += 1;
+				velocityChange();
+			},
+			    goLeft = function goLeft() {
+				_this3.vx -= 1;
+				velocityChange();
+			},
+			    goUp = function goUp() {
+				_this3.vy -= 1;
+				velocityChange();
+			},
+			    goDown = function goDown() {
+				_this3.vy += 1;
+				velocityChange();
+			};
+
+			left.press = goLeft;
+			left.release = goRight;
+			right.press = goRight;
+			right.release = goLeft;
+			up.press = goUp;
+			up.release = goDown;
+			down.press = goDown;
+			down.release = goUp;
+		}
+	}, {
 		key: 'canFire',
 		value: function canFire() {
 			var time = new Date().getTime();
@@ -57665,30 +57790,37 @@ var Tank = function (_EventEmitter) {
 				return;
 			}
 			var alpha = this.renderer.cannon.rotation + this.renderer.base.rotation;
-			var cannonLength = 60;
-			var deltaX = cannonLength * Math.sin(alpha);
-			var deltaY = cannonLength * -Math.cos(alpha);
-			var x = this.renderer.tank.position.x + deltaX - 10;
-			var y = this.renderer.tank.position.y + deltaY - 10;
-			var bullet = new _Bullet2.default(this.app, x, y, alpha, this.options);
 			this.emit('shoot', {
 				angle: alpha
 			});
+		}
+	}, {
+		key: 'shoot',
+		value: function shoot(x, y, alpha) {
+			var bullet = new _Bullet2.default(this.app, x, y, alpha, this.options);
 			bullet.once('bulletOut', function () {
 				bullet.renderer.bullet.destroy();
 				delete bullet.renderer;
 				bullet = null;
 			});
+			this.renderer.cannon.rotation = alpha - this.renderer.base.rotation;
+			this.alpha = alpha;
+		}
+	}, {
+		key: 'setVelocity',
+		value: function setVelocity(data) {
+			this.vx = data.vx;
+			this.vy = data.vy;
 		}
 	}, {
 		key: '_onMouseDown',
 		value: function _onMouseDown(e) {
-			var _this2 = this;
+			var _this4 = this;
 
 			this._onMouseUp();
 			var mousePosition = e.data.global;
 			this.fireInterval = setInterval(function () {
-				_this2.fire(mousePosition.x, mousePosition.y);
+				_this4.fire(mousePosition.x, mousePosition.y);
 			}, 1000 / this.bullet.rate + 5);
 			this.fire(mousePosition.x, mousePosition.y);
 			this.emit('fireStart', mousePosition);
@@ -57699,78 +57831,6 @@ var Tank = function (_EventEmitter) {
 			clearInterval(this.fireInterval);
 			this.fireInterval = 0;
 			this.emit('fireEnd');
-		}
-	}, {
-		key: 'initControls',
-		value: function initControls() {
-			var _this3 = this;
-
-			this.renderer.cannon.on('mousemove', this.onMouseMove.bind(this));
-			this.app.renderer.plugins.interaction.on('mousedown', this._onMouseDown.bind(this));
-			this.app.renderer.plugins.interaction.on('mouseup', this._onMouseUp.bind(this));
-			this.app.renderer.plugins.interaction.on('mouseupoutside', this._onMouseUp.bind(this));
-			this.initKeyboard();
-			this.app.ticker.add(function (delta) {
-				var limits = window.tankGame.limits;
-				_this3.renderer.tank.position.x += _this3.speed * _this3.vx * delta;
-				if (_this3.renderer.tank.position.x < 30) {
-					_this3.renderer.tank.position.x = 30;
-				} else if (_this3.renderer.tank.position.x > limits.w - 30) {
-					_this3.renderer.tank.position.x = limits.w - 30;
-				}
-				if (_this3.renderer.tank.position.y < 30) {
-					_this3.renderer.tank.position.y = 30;
-				} else if (_this3.renderer.tank.position.y > limits.h - 30) {
-					_this3.renderer.tank.position.y = limits.h - 30;
-				}
-				_this3.renderer.tank.position.y += _this3.speed * _this3.vy * delta;
-				if (_this3.vx || _this3.vy) {
-					_this3.renderer.base.rotation = Math.atan2(_this3.vy, _this3.vx) + Math.PI / 2;
-				}
-				_this3.onMouseMove();
-			});
-		}
-	}, {
-		key: 'initKeyboard',
-		value: function initKeyboard() {
-			var _this4 = this;
-
-			var left = (0, _Keyboard2.default)([37, 81]),
-			    up = (0, _Keyboard2.default)([38, 90]),
-			    right = (0, _Keyboard2.default)([39, 68]),
-			    down = (0, _Keyboard2.default)([40, 83]);
-
-			var velocityChange = function velocityChange() {
-				_this4.emit('velocityChange', {
-					vx: _this4.vx,
-					vy: _this4.vy
-				});
-			};
-			var goRight = function goRight() {
-				_this4.vx += 1;
-				velocityChange();
-			},
-			    goLeft = function goLeft() {
-				_this4.vx -= 1;
-				velocityChange();
-			},
-			    goUp = function goUp() {
-				_this4.vy -= 1;
-				velocityChange();
-			},
-			    goDown = function goDown() {
-				_this4.vy += 1;
-				velocityChange();
-			};
-
-			left.press = goLeft;
-			left.release = goRight;
-			right.press = goRight;
-			right.release = goLeft;
-			up.press = goUp;
-			up.release = goDown;
-			down.press = goDown;
-			down.release = goUp;
 		}
 	}, {
 		key: 'onMouseMove',
@@ -57836,6 +57896,13 @@ var TankRenderer = function () {
 	}
 
 	_createClass(TankRenderer, [{
+		key: 'destroy',
+		value: function destroy() {
+			if (this.tank) {
+				this.tank.destroy(true);
+			}
+		}
+	}, {
 		key: 'initBase',
 		value: function initBase(base) {
 			this.base = PIXI.Sprite.fromImage(base);
@@ -57987,15 +58054,21 @@ app.stage.addChild(limits);
 socket.on('gameTerrainLimit', function (data) {
 	limits.clear();
 	limits.lineStyle(2, 0x0000FF, 1);
-	limits.drawRect((w - data.x) / 2, (h - data.y) / 2, data.x, data.y);
+	limits.drawRect((w - data.w) / 2, (h - data.h) / 2, data.w, data.h);
 	window.tankGame.limits = {
-		x: (w - data.x) / 2,
-		y: (h - data.y) / 2,
-		w: data.x,
-		h: data.y
+		x: (w - data.w) / 2,
+		y: (h - data.h) / 2,
+		w: data.w,
+		h: data.h
 	};
-	window.tankGame.gameContainer.position.x = (w - data.x) / 2;
-	window.tankGame.gameContainer.position.y = (h - data.y) / 2;
+	window.tankGame.gameContainer.position.x = (w - data.w) / 2;
+	window.tankGame.gameContainer.position.y = (h - data.h) / 2;
 });
+
+window.onbeforeunload = function () {
+	if (window.tankGame.game) {
+		socket.emit('gameLeaveRequest');
+	}
+};
 
 },{"./Game/Game":237,"./Home/Home":238,"pixi.js":174,"socket.io-client":221}]},{},[242]);

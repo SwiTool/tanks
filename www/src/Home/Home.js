@@ -15,24 +15,13 @@ class Home {
 		this.vm = new Vue({
 			el: "#page",
 			data: {
-				app: this.app,
 				socket: this.socket,
-				self: this,
 				loading: false,
 				selectedTankId: 1,
 				availableTanks: [],
 				tankName: "Tanker"+random.integer(1,9999),
 				connected: false,
 				inGame: false
-			},
-			watch: {
-				'connected': function(e) {
-					if (e) {
-						this.setConnectedBackground();
-					} else {
-						this.setDisconnectedBackground();
-					}
-				}
 			},
 			mounted() {
 				this.fetchAvailableTanks();
@@ -50,12 +39,6 @@ class Home {
 				selectTank(id) {
 					this.selectedTankId = id;
 				},
-				setConnectedBackground() {
-					this.app.renderer.backgroundColor = 0xadd8e6;
-				},
-				setDisconnectedBackground() {
-					this.app.renderer.backgroundColor = 0xde7575;
-				},
 				fetchAvailableTanks() {
 					this.socket.emit('availableTanksRequest');
 				}
@@ -66,9 +49,11 @@ class Home {
 	initNetworkEvents() {
 		this.socket.on('connect', () => {
 			this.vm.connected = true;
+			this.app.renderer.backgroundColor = 0xadd8e6;
 		});
 		this.socket.on('disconnect', () => {
 			this.vm.connected = false;
+			this.app.renderer.backgroundColor = 0xde7575;
 		});
 		this.socket.on('availableTanksResponse', (availableTanks) => {
 			this.vm.availableTanks = availableTanks;

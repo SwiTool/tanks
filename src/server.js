@@ -68,14 +68,41 @@ io.on('connection', function (client) {
 			default:
 				return;
 		}
-		if (game.addTank(tank)) {
+		var tanks = JSON.parse(JSON.stringify(game.tanks));
+		if (game.addTank(tank, client.id)) {
 			var data = tank.toJson();
-			client.broadcast.emit('addTank', data);
-			client.emit('gameJoinAccept', data);
+			var toSend = {
+				clientId: client.id,
+				tankData: data
+			};
+			client.broadcast.emit('addTank', toSend);
+			client.emit('gameJoinAccept', toSend);
 			client.emit('gameTerrainLimit', game.terrain);
+			client.emit('gameListTanks', tanks);
 		} else {
-			client.emit('gameJoinDeny', { message: "Tank name already taken." });
+			client.emit('gameJoinDeny', { message: "Can't join game" });
 		}
+	});
+
+	client.on('shoot', function (data) {
+		var tank = game.tanks[client.id];
+		if (!tank) {
+			return;
+		}
+		var shootData = tank.shoot(data.angle);
+		io.sockets.emit('shoot', {
+			clientId: client.id,
+			shootData: shootData
+		});
+	});
+
+	client.on('velocityChange', function (data) {
+		data.vx = data.vx > 1 ? 1 : data.vx < -1 ? -1 : data.vx;
+		data.vy = data.vy > 1 ? 1 : data.vy < -1 ? -1 : data.vy;
+		client.broadcast.emit('velocityChange', {
+			clientId: client.id,
+			velocity: data
+		});
 	});
 
 	/*client.on('sync', function(data){
@@ -95,17 +122,13 @@ io.on('connection', function (client) {
  	game.cleanDeadBalls();
  	counter ++;
  });
- 
- client.on('shoot', function(ball){
- 	var ball = new Ball(ball.ownerId, ball.alpha, ball.x, ball.y );
- 	ball.id = game.lastBallId;
- 	game.increaseLastBallId();
- 	game.addBall(ball);
- });
- 
- client.on('leaveGame', function(tankId){
- 	console.log(tankId + ' has left the game');
- 	game.removeTank(tankId);
- 	client.broadcast.emit('removeTank', tankId);
- });*/
+ */
+
+	client.on('gameLeaveRequest', function () {
+		if (game.tanks[client.id]) {
+			console.log(game.tanks[client.id].id + ' has left the game');
+		}
+		game.removeTank(client.id);
+		client.broadcast.emit('removeTank', client.id);
+	});
 });

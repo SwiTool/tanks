@@ -5,8 +5,8 @@ import MiniTankData from './Data/MiniTankData';
 class MiniTank extends Tank {
 	constructor(id) {
 		super(id);
-		this.tankData = MiniTankData;
-		this.bulletData = MiniTankBulletData;
+		this.tankInfo = MiniTankData;
+		this.bulletInfo = MiniTankBulletData;
 		this.type = 2;
 	}
 
@@ -16,6 +16,10 @@ class MiniTank extends Tank {
 
 	getSpriteOffsetY() {
 		return 30;
+	}
+
+	getCannonLength() {
+		return 60;
 	}
 }
 

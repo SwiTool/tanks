@@ -5,21 +5,29 @@ class GameServer {
 		this.tanks = {};
 		this.balls = [];
 		this.terrain = {
-			x: width,
-			y: height
+			w: width,
+			h: height
 		};
 	}
 
-	addTank(tank) {
+	addTank(tank, id) {
 		var offsetX = tank.getSpriteOffsetX();
 		var offsetY = tank.getSpriteOffsetY();
-		tank.x = random.integer(offsetX, this.terrain.x - offsetX);
-		tank.y = random.integer(offsetY, this.terrain.y - offsetY);
-		if (this.tanks[tank.id]) {
+		tank.x = random.integer(offsetX, this.terrain.w - offsetX);
+		tank.y = random.integer(offsetY, this.terrain.h - offsetY);
+		if (this.tanks[id]) {
 			return false;
 		}
-		this.tanks[tank.id] = tank;
+		this.tanks[id] = tank;
 		return true;
+	}
+
+	removeTank(id) {
+		if (this.tanks[id]) {
+			delete this.tanks[id];
+			return true;
+		}
+		return false;
 	}
 
 	//The app has absolute control of the balls and their movement
@@ -29,8 +37,8 @@ class GameServer {
 		this.balls.forEach( function(ball){
 			self.detectCollision(ball);
 
-			if(ball.x < 0 || ball.x > this.terrain.x
-				|| ball.y < 0 || ball.y > this.terrain.y){
+			if(ball.x < 0 || ball.x > this.terrain.w
+				|| ball.y < 0 || ball.y > this.terrain.h){
 				ball.out = true;
 			}else{
 				ball.fly();

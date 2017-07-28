@@ -43,13 +43,19 @@ app.stage.addChild(limits);
 socket.on('gameTerrainLimit', (data) => {
 	limits.clear();
 	limits.lineStyle(2, 0x0000FF, 1);
-	limits.drawRect((w-data.x)/2, (h-data.y)/2, data.x, data.y);
+	limits.drawRect((w-data.w)/2, (h-data.h)/2, data.w, data.h);
 	window.tankGame.limits = {
-		x: (w-data.x)/2,
-		y: (h-data.y)/2,
-		w: data.x,
-		h: data.y
+		x: (w-data.w)/2,
+		y: (h-data.h)/2,
+		w: data.w,
+		h: data.h
 	};
-	window.tankGame.gameContainer.position.x = (w-data.x)/2;
-	window.tankGame.gameContainer.position.y = (h-data.y)/2;
+	window.tankGame.gameContainer.position.x = (w-data.w)/2;
+	window.tankGame.gameContainer.position.y = (h-data.h)/2;
 });
+
+window.onbeforeunload = () => {
+	if (window.tankGame.game) {
+		socket.emit('gameLeaveRequest');
+	}
+};

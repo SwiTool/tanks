@@ -5,8 +5,8 @@ import HeavyTankData from './Data/HeavyTankData';
 class HeavyTank extends Tank {
 	constructor(id) {
 		super(id);
-		this.tankData = HeavyTankData;
-		this.bulletData = HeavyTankBulletData;
+		this.tankInfo = HeavyTankData;
+		this.bulletInfo = HeavyTankBulletData;
 		this.type = 3;
 	}
 }

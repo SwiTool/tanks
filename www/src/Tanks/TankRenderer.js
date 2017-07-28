@@ -17,6 +17,12 @@ class TankRenderer {
 		window.tankGame.gameContainer.addChild(this.tank);
 	}
 
+	destroy() {
+		if (this.tank) {
+			this.tank.destroy(true);
+		}
+	}
+
 	initBase(base) {
 		this.base = PIXI.Sprite.fromImage(base);
 		this.base.anchor.set(0.5);

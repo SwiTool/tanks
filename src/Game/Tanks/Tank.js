@@ -9,8 +9,8 @@ class Tank {
 		this.x			= 0;
 		this.y			= 0;
 		this.angle		= 0;
-		this.tankData 	= null;
-		this.bulletData = null;
+		this.tankInfo 	= null;
+		this.bulletInfo = null;
 		this.type		= null;
 	}
 
@@ -22,11 +22,33 @@ class Tank {
 		return 30;
 	}
 
+	getCannonLength() {
+		return 60;
+	}
+
+	getCannonOffset() {
+		return 10;
+	}
+
+	shoot(angle) {
+		var cannonLength = this.getCannonLength();
+		var cannonOffset = this.getCannonOffset();
+		var deltaX = cannonLength * Math.sin(angle);
+		var deltaY = cannonLength * -Math.cos(angle);
+		var x = this.x + deltaX - cannonOffset;
+		var y = this.y + deltaY - cannonOffset;
+		return {
+			x: x,
+			y: y,
+			angle: angle
+		}
+	}
+	
 	toJson() {
 		return {
-			hp: this.tankData.hp,
-			shield: this.tankData.shield,
-			speed: this.tankData.speed,
+			hp: this.tankInfo.hp,
+			shield: this.tankInfo.shield,
+			speed: this.tankInfo.speed,
 			id: this.id,
 			type: this.type,
 			x: this.x,

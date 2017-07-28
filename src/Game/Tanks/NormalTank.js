@@ -5,8 +5,8 @@ import NormalTankData from './Data/NormalTankData';
 class NormalTank extends Tank {
 	constructor(id) {
 		super(id);
-		this.tankData = NormalTankData;
-		this.bulletData = NormalTankBulletData;
+		this.tankInfo = NormalTankData;
+		this.bulletInfo = NormalTankBulletData;
 		this.type = 1;
 	}
 }
