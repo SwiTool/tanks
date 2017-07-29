@@ -1,5 +1,5 @@
 export default {
 	hp: 200,
 	shield: 0,
-	speed: 1,
+	speed: 90,
 };

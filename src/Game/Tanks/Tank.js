@@ -12,6 +12,7 @@ class Tank {
 		this.tankInfo 	= null;
 		this.bulletInfo = null;
 		this.type		= null;
+		this.moveData	= null;
 	}
 
 	getSpriteOffsetX() {
@@ -28,6 +29,22 @@ class Tank {
 
 	getCannonOffset() {
 		return 10;
+	}
+
+	updatePosition(data) {
+		var pos = null;
+		if (data == undefined) {
+			pos = this.moveData.getPosition();
+		} else {
+			if (this.moveData.isMoving()) {
+				pos = this.moveData.getPosition();
+			}
+			this.moveData.move(data);
+		}
+		if (pos) {
+			this.x += pos.x;
+			this.y += pos.y;
+		}
 	}
 
 	shoot(angle) {

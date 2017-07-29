@@ -1,6 +1,7 @@
 import Tank from './Tank';
 import MiniTankBulletData from '../Bullets/Data/MiniTankBulletData';
 import MiniTankData from './Data/MiniTankData';
+import MoveData from '../MoveData';
 
 class MiniTank extends Tank {
 	constructor(id) {
@@ -8,6 +9,7 @@ class MiniTank extends Tank {
 		this.tankInfo = MiniTankData;
 		this.bulletInfo = MiniTankBulletData;
 		this.type = 2;
+		this.moveData = new MoveData(this.tankInfo.speed);
 	}
 
 	getSpriteOffsetX() {

@@ -57697,8 +57697,8 @@ var Tank = function (_EventEmitter) {
 		key: 'tick',
 		value: function tick(delta) {
 			var limits = window.tankGame.limits;
-			this.renderer.tank.position.x += this.speed * this.vx * delta;
-			this.renderer.tank.position.y += this.speed * this.vy * delta;
+			this.renderer.tank.position.x += this.speed / 60 * this.vx * delta;
+			this.renderer.tank.position.y += this.speed / 60 * this.vy * delta;
 			if (this.renderer.tank.position.x < 30) {
 				this.renderer.tank.position.x = 30;
 			} else if (this.renderer.tank.position.x > limits.w - 30) {

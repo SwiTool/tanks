@@ -89,6 +89,7 @@ io.on('connection', function (client) {
 		if (!tank) {
 			return;
 		}
+		tank.updatePosition();
 		var shootData = tank.shoot(data.angle);
 		io.sockets.emit('shoot', {
 			clientId: client.id,
@@ -97,12 +98,17 @@ io.on('connection', function (client) {
 	});
 
 	client.on('velocityChange', function (data) {
+		var tank = game.tanks[client.id];
+		if (!tank) {
+			return;
+		}
 		data.vx = data.vx > 1 ? 1 : data.vx < -1 ? -1 : data.vx;
 		data.vy = data.vy > 1 ? 1 : data.vy < -1 ? -1 : data.vy;
 		client.broadcast.emit('velocityChange', {
 			clientId: client.id,
 			velocity: data
 		});
+		tank.updatePosition(data);
 	});
 
 	/*client.on('sync', function(data){
