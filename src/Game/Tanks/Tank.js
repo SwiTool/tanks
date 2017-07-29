@@ -1,11 +1,12 @@
 var random = require('random-js')();
 
 class Tank {
-	constructor(id) {
+	constructor(game, id) {
 		if (this.constructor === Tank) {
         	throw new Error("Cannot instantiate this class");
     	}
 		this.id			= id;
+		this.game		= game;
 		this.x			= 0;
 		this.y			= 0;
 		this.angle		= 0;
@@ -13,6 +14,7 @@ class Tank {
 		this.bulletInfo = null;
 		this.type		= null;
 		this.moveData	= null;
+		this.shootRate	= null;
 	}
 
 	getSpriteOffsetX() {
@@ -44,6 +46,16 @@ class Tank {
 		if (pos) {
 			this.x += pos.x;
 			this.y += pos.y;
+			if (this.x > this.game.terrain.w - 30) {
+				this.x = this.game.terrain.w - 30;
+			} else if (this.x < 30) {
+				this.x = 30;
+			}
+			if (this.y > this.game.terrain.h - 30) {
+				this.y = this.game.terrain.h - 30;
+			} else if (this.y < 30) {
+				this.y = 30;
+			}
 		}
 	}
 

@@ -35,13 +35,13 @@ io.on('connection', function(client) {
 		var tank = null;
 		switch (parseInt(tankData.type)) {
 			case 1:
-			tank = new NormalTank(tankData.id);
+			tank = new NormalTank(game, tankData.id);
 			break;
 			case 2:
-			tank = new MiniTank(tankData.id);
+			tank = new MiniTank(game, tankData.id);
 			break;
 			case 3:
-			tank = new HeavyTank(tankData.id);
+			tank = new HeavyTank(game, tankData.id);
 			break;
 			default:
 			return;
@@ -66,6 +66,9 @@ io.on('connection', function(client) {
 		var tank = game.tanks[client.id];
 		if (!tank) { return; }
 		tank.updatePosition();
+		if (!tank.shootRate.canShoot()) {
+			return;
+		}
 		var shootData = tank.shoot(data.angle);
 		io.sockets.emit('shoot', {
 			clientId: client.id,
